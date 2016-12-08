@@ -1,0 +1,126 @@
+// Created by Jamie Bunnell 06/10/2014 Version 18
+// smooth_jamie@outlook.com
+// This code is intended to run on Arduino Uno as Current data-logger
+
+// Include the following libraries
+
+#include <Adafruit_ADS1015.h>
+#include <DS3231.h>
+#include <SD.h>
+#include <SPI.h>
+
+Adafruit_ADS1115 adcOne(0x48);
+Adafruit_ADS1115 adcTwo(0x49);
+
+int chipSelect = 4;
+File mySensorData;
+
+// Init the DS3231 using the hardware interface
+DS3231  rtc(SDA, SCL);
+
+void setup() {
+    Serial.begin(9600);
+    pinMode(10, OUTPUT);
+    SD.begin(4);
+      // Initialize the rtc object
+    rtc.begin();
+    adcOne.setGain(GAIN_ONE);
+    adcTwo.setGain(GAIN_ONE);
+    adcOne.begin();
+    adcTwo.begin();
+    Serial.println("date,time,channel 1-8");
+    Serial.println("ddd/mm/yy,hh:mm:ss,mA");
+    Serial.println("------------");
+}
+
+void loop() {
+mySensorData = SD.open("CTData.txt", FILE_WRITE); //open a file named CTdata.txt and write to sd card
+if (mySensorData) {
+        int16_t adc0, adc1, adc2, adc3, adc4, adc5, adc6, adc7;
+
+// read the following as integers from ADC channels
+ 
+        adc0 = adcOne.readADC_SingleEnded(0);
+        adc1 = adcOne.readADC_SingleEnded(1);
+        adc2 = adcOne.readADC_SingleEnded(2);
+        adc3 = adcOne.readADC_SingleEnded(3);
+        adc4 = adcTwo.readADC_SingleEnded(0);
+        adc5 = adcTwo.readADC_SingleEnded(1);
+        adc6 = adcTwo.readADC_SingleEnded(2);
+        adc7 = adcTwo.readADC_SingleEnded(3);
+
+// convert integers to floating point numbers so ADC can be calculated to amps
+// chn is abbreviated for channel
+
+// uncomment following to use raw ADC readings
+
+//        float chn0 = ((adc0));
+//        float chn1 = ((adc1));
+//        float chn2 = ((adc2));
+//        float chn3 = ((adc3));
+//        float chn4 = ((adc4));
+//        float chn5 = ((adc5));
+//        float chn6 = ((adc6));
+//        float chn7 = ((adc7));
+
+// Uncomment following to invoke calculation derived from cubic formula
+// Third order polynomial trend y = (C3 * x^3) + (C2 * x^2) + (C1 * x^1) + b
+
+        float chn0 = ((7.30315 * pow(10,-13)) * pow(adc0,3) + (-3.72889 * pow(10,-8) * pow(adc0,2) + (0.003985811 * adc0) + (0.663064521)));
+        float chn1 = ((2.91845 * pow(10,-13)) * pow(adc1,3) + (-1.56632 * pow(10,-8) * pow(adc1,2) + (0.003646505 * adc1) + (0.404310374)));
+        float chn2 = ((7.52942 * pow(10,-13)) * pow(adc2,3) + (-3.90016 * pow(10,-8) * pow(adc2,2) + (0.004017787 * adc2) + (0.656911691)));
+        float chn3 = ((7.00126 * pow(10,-13)) * pow(adc3,3) + (-3.30436 * pow(10,-8) * pow(adc3,2) + (0.003984264 * adc3) + (0.511296598)));
+        float chn4 = ((5.07102 * pow(10,-13)) * pow(adc4,3) + (-2.51420 * pow(10,-8) * pow(adc4,2) + (0.003768314 * adc4) + (0.316014227)));
+        float chn5 = ((6.66869 * pow(10,-13)) * pow(adc5,3) + (-3.08128 * pow(10,-8) * pow(adc5,2) + (0.003809496 * adc5) + (0.133221385)));
+        float chn6 = ((6.24567 * pow(10,-13)) * pow(adc6,3) + (-3.31267 * pow(10,-8) * pow(adc6,2) + (0.003944613 * adc6) + (0.657632915)));
+        float chn7 = ((-2.31548* pow(10,-13)) * pow(adc7,3) + ( 1.47842 * pow(10,-8) * pow(adc7,2) + (0.003114635 * adc7) + (-0.163650358)));
+
+// the following code prints the details in the serial monitor
+//        
+        Serial.print(rtc.getDateStr()); //print date in serial monitor
+        Serial.print(","); //this prints a comma
+        Serial.print(rtc.getTimeStr());
+        Serial.print(",");
+        Serial.print(chn0, 1); //prints 'chn0' in terminal to 1 dp
+        Serial.print(",");
+        Serial.print(chn1, 1);
+        Serial.print(",");
+        Serial.print(chn2, 1);
+        Serial.print(",");
+        Serial.print(chn3, 1);
+        Serial.print(",");
+        Serial.print(chn4, 1);
+        Serial.print(",");
+        Serial.print(chn5, 1);
+        Serial.print(",");
+        Serial.print(chn6, 1);
+        Serial.print(",");
+        Serial.print(chn7, 1);
+        Serial.println(","); // println print a comma on a new line
+
+//following readings printed in serial monitor written to SD card
+
+        mySensorData.print(rtc.getDateStr());
+        mySensorData.print(",");
+        mySensorData.print(rtc.getTimeStr());
+        mySensorData.print(",");
+        mySensorData.print(chn0, 1);
+        mySensorData.print(",");
+        mySensorData.print(chn1, 1);
+        mySensorData.print(",");
+        mySensorData.print(chn2, 1);
+        mySensorData.print(",");
+        mySensorData.print(chn3, 1);
+        mySensorData.print(",");
+        mySensorData.print(chn4, 1);
+        mySensorData.print(",");
+        mySensorData.print(chn5, 1);
+        mySensorData.print(",");
+        mySensorData.print(chn6, 1);
+        mySensorData.print(",");
+        mySensorData.print(chn7, 1);
+        mySensorData.println(",");
+        mySensorData.close();
+        delay(1000);
+}
+}
